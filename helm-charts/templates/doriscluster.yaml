@@ -1,0 +1,76 @@
+{{/*
+DorisCluster CR - Only created when using internal Doris mode
+*/}}
+{{- if eq .Values.doris.mode "internal" }}
+apiVersion: doris.selectdb.com/v1
+kind: DorisCluster
+metadata:
+  name: {{ include "dog.doris.clusterName" . }}
+  labels:
+    {{- include "dog.labels" . | nindent 4 }}
+    app.kubernetes.io/name: doriscluster
+    app.kubernetes.io/instance: {{ include "dog.doris.clusterName" . }}
+    app.kubernetes.io/part-of: doris-operator
+spec:
+  # Frontend (FE) Specification
+  feSpec:
+    replicas: {{ .Values.doris.internal.cluster.fe.replicas }}
+    image: {{ .Values.doris.internal.cluster.fe.image }}
+    {{- with .Values.doris.internal.cluster.fe.resources }}
+    requests:
+      cpu: {{ .requests.cpu }}
+      memory: {{ .requests.memory }}
+    limits:
+      cpu: {{ .limits.cpu }}
+      memory: {{ .limits.memory }}
+    {{- end }}
+    {{- with .Values.doris.internal.cluster.fe.service }}
+    service:
+      type: {{ .type }}
+    {{- end }}
+    {{- if .Values.doris.internal.cluster.persistence.enabled }}
+    persistentVolumes:
+      - mountPath: /opt/apache-doris/fe/doris-meta
+        name: fe-meta
+        persistentVolumeClaimSpec:
+          {{- if .Values.doris.internal.cluster.persistence.storageClass }}
+          storageClassName: {{ .Values.doris.internal.cluster.persistence.storageClass }}
+          {{- end }}
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: {{ .Values.doris.internal.cluster.persistence.fe.size }}
+    {{- end }}
+
+  # Backend (BE) Specification
+  beSpec:
+    replicas: {{ .Values.doris.internal.cluster.be.replicas }}
+    image: {{ .Values.doris.internal.cluster.be.image }}
+    {{- with .Values.doris.internal.cluster.be.resources }}
+    requests:
+      cpu: {{ .requests.cpu }}
+      memory: {{ .requests.memory }}
+    limits:
+      cpu: {{ .limits.cpu }}
+      memory: {{ .limits.memory }}
+    {{- end }}
+    {{- with .Values.doris.internal.cluster.be.service }}
+    service:
+      type: {{ .type }}
+    {{- end }}
+    {{- if .Values.doris.internal.cluster.persistence.enabled }}
+    persistentVolumes:
+      - mountPath: /opt/apache-doris/be/storage
+        name: be-storage
+        persistentVolumeClaimSpec:
+          {{- if .Values.doris.internal.cluster.persistence.storageClass }}
+          storageClassName: {{ .Values.doris.internal.cluster.persistence.storageClass }}
+          {{- end }}
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: {{ .Values.doris.internal.cluster.persistence.be.size }}
+    {{- end }}
+{{- end }}

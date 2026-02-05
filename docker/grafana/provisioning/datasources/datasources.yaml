@@ -1,0 +1,22 @@
+# Grafana Datasource Provisioning
+# Auto-provision Doris as MySQL-compatible datasource
+
+apiVersion: 1
+
+datasources:
+  # Apache Doris - MySQL Protocol
+  - name: Doris
+    type: mysql
+    uid: doris
+    url: doris:9030
+    user: root
+    database: otel
+    isDefault: true
+    jsonData:
+      maxOpenConns: 10
+      maxIdleConns: 10
+      connMaxLifetime: 14400
+      tlsSkipVerify: true
+    secureJsonData:
+      password: ""
+    editable: true

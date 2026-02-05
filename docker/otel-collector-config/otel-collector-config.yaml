@@ -1,0 +1,143 @@
+# OpenTelemetry Collector Configuration
+# Role: OTEL Gateway with Doris Exporter (All-in-One Setup)
+
+receivers:
+  # OTLP receiver - standard protocol for traces, metrics, and logs
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # ============================================================================
+  # Self-Observability Receivers - Generate demo data from the collector itself
+  # ============================================================================
+
+  # Host metrics receiver - collects system metrics (CPU, memory, disk, network)
+  hostmetrics:
+    collection_interval: 15s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      disk:
+      filesystem:
+      network:
+      load:
+      processes:
+
+  # Prometheus receiver - scrape collector's own metrics from :8888
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          scrape_interval: 15s
+          static_configs:
+            - targets: ['localhost:8888']
+              labels:
+                service: 'otel-collector'
+                env: 'docker'
+
+processors:
+  # Batch processor - batches data before sending to exporters
+  batch:
+    timeout: 5s
+    send_batch_size: 10000
+    send_batch_max_size: 11000
+
+  # Memory limiter - prevents OOM
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 1024
+    spike_limit_mib: 256
+
+exporters:
+  # Doris exporter - single exporter for traces, logs, and metrics
+  # Note: Use BE port 8040 for Stream Load (FE 8030 returns 307 redirect to localhost)
+  doris:
+    endpoint: http://doris:8040
+    database: otel
+    username: root
+    password: ""
+    create_schema: true
+    mysql_endpoint: doris:9030
+    table:
+      logs: otel_logs
+      traces: otel_traces
+      metrics: otel_metrics
+    history_days: 7
+    create_history_days: 3
+    replication_num: 1
+    timezone: Asia/Shanghai
+    log_response: false
+    timeout: 60s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
+
+  # Debug exporter for troubleshooting (optional, comment out in production)
+  debug:
+    verbosity: basic
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+extensions:
+  # Health check extension
+  health_check:
+    endpoint: 0.0.0.0:13133
+    path: "/"
+    check_collector_pipeline:
+      enabled: true
+      interval: "5m"
+      exporter_failure_threshold: 5
+
+  # Performance profiler
+  pprof:
+    endpoint: 0.0.0.0:1777
+
+  # zPages for debugging
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, pprof, zpages]
+  
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      level: detailed
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: "0.0.0.0"
+                port: 8888
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [doris, debug]
+
+    metrics:
+      receivers: [otlp, hostmetrics, prometheus]
+      processors: [memory_limiter, batch]
+      exporters: [doris, debug]
+
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [doris, debug]

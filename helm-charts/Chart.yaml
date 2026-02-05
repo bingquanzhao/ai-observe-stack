@@ -1,0 +1,36 @@
+apiVersion: v2
+name: dogstack
+description: DOGStack - Doris OpenTelemetry Grafana with Doris App Plugin. A complete observability stack using Apache Doris as the storage backend.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+keywords:
+  - observability
+  - doris
+  - grafana
+  - opentelemetry
+  - doris-app
+  - traces
+  - metrics
+  - logs
+
+home: https://github.com/apache/doris
+icon: https://doris.apache.org/img/doris-logo.svg
+
+maintainers:
+  - name: DOGStack Team
+    email: dev@doris.apache.org
+
+dependencies:
+  # Doris Operator - only when using internal Doris
+  # Provides CRDs for DorisCluster management
+  - name: doris-operator
+    version: "1.6.1"
+    repository: https://charts.selectdb.com
+    condition: doris.internal.operator.enabled
+    alias: dorisOperator
+
+# Note: OpenTelemetry Collector and Grafana are deployed via custom templates
+# in this chart for better control over configuration. The official subcharts
+# can be enabled if preferred by modifying this file.

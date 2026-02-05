@@ -1,0 +1,48 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.iml
+
+# Logs
+*.log
+logs/
+
+# Helm
+*.tgz
+charts/*.tgz
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# Secrets and environment files
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# Grafana
+grafana/data/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Build artifacts
+dist/
+build/

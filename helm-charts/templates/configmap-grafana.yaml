@@ -1,0 +1,64 @@
+{{/*
+Grafana Provisioning ConfigMaps
+*/}}
+{{- if .Values.grafana.enabled }}
+---
+# Datasources ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dog.grafana.fullname" . }}-datasources
+  labels:
+    {{- include "dog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+    grafana_datasource: "1"
+data:
+  datasources.yaml: |
+    # Grafana Datasource Provisioning
+    # Auto-provision Doris as MySQL-compatible datasource
+    apiVersion: 1
+
+    datasources:
+      # Apache Doris - MySQL Protocol
+      - name: Doris
+        type: mysql
+        uid: doris
+        url: {{ include "dog.doris.mysqlEndpoint" . }}
+        user: {{ include "dog.doris.user" . }}
+        database: {{ include "dog.doris.database" . }}
+        isDefault: true
+        jsonData:
+          maxOpenConns: 10
+          maxIdleConns: 10
+          connMaxLifetime: 14400
+          tlsSkipVerify: true
+        secureJsonData:
+          password: "{{ include "dog.doris.password" . }}"
+        editable: true
+
+---
+# Dashboard Providers ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dog.grafana.fullname" . }}-dashboard-providers
+  labels:
+    {{- include "dog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+data:
+  dashboards.yaml: |
+    # Grafana Dashboard Provisioning
+    apiVersion: 1
+
+    providers:
+      - name: 'DOGStack Observability Dashboards'
+        orgId: 1
+        folder: 'DOGStack Observability'
+        folderUid: dogstack-observability
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards/dog
+{{- end }}

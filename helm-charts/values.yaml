@@ -1,0 +1,251 @@
+# =============================================================================
+# DOGStack - Doris OpenTelemetry Grafana with Doris App Plugin
+# =============================================================================
+# Default values for DOGStack helm chart.
+
+# -----------------------------------------------------------------------------
+# Global settings
+# -----------------------------------------------------------------------------
+global:
+  nameOverride: ""
+  fullnameOverride: ""
+
+# =============================================================================
+# Doris Configuration
+# =============================================================================
+doris:
+  # Mode: "internal" | "external"
+  # - internal: Deploy Doris using Doris Operator (default)
+  # - external: Connect to an existing Doris cluster
+  mode: internal
+
+  # Database name for storing observability data
+  database: otel
+
+  # ---------------------------------------------------------------------------
+  # Internal mode configuration (when mode: internal)
+  # ---------------------------------------------------------------------------
+  internal:
+    # Doris Operator settings
+    operator:
+      # Set to false if Doris Operator is already installed in your cluster
+      enabled: true
+
+    # DorisCluster specification
+    cluster:
+      fe:
+        replicas: 1
+        image: apache/doris:fe-4.0.2
+        resources:
+          requests:
+            cpu: 2
+            memory: 4Gi
+          limits:
+            cpu: 4
+            memory: 8Gi
+        service:
+          type: ClusterIP
+
+      be:
+        replicas: 1
+        image: apache/doris:be-4.0.2
+        resources:
+          requests:
+            cpu: 2
+            memory: 4Gi
+          limits:
+            cpu: 4
+            memory: 8Gi
+        service:
+          type: ClusterIP
+
+      persistence:
+        enabled: true
+        storageClass: ""
+        fe:
+          size: 20Gi
+        be:
+          size: 20Gi
+
+  # ---------------------------------------------------------------------------
+  # External mode configuration (when mode: external)
+  # ---------------------------------------------------------------------------
+  external:
+    host: ""
+    port: 9030
+    # FE HTTP port for Web UI and Stream Load routing
+    feHttpPort: 8030
+    # BE HTTP port for direct Stream Load (optional, for advanced use cases)
+    beHttpPort: 8040
+    user: "root"
+    password: ""
+    # Use existing secret for credentials (optional)
+    existingSecret: ""
+    userKey: "username"
+    passwordKey: "password"
+
+# =============================================================================
+# OpenTelemetry Collector Configuration
+# =============================================================================
+otel:
+  enabled: true
+
+  image:
+    repository: otel/opentelemetry-collector-contrib
+    tag: "0.144.0"
+    pullPolicy: IfNotPresent
+
+  # High Availability (StatefulSet)
+  replicas: 2
+  podManagementPolicy: Parallel
+
+  # Persistence for collector logs
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 10Gi
+    logPath: /var/log/otelcol
+
+  # Logging
+  logging:
+    level: info
+    format: json
+    fileOutput:
+      enabled: true
+
+  # Resources
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+
+  # Doris exporter settings
+  dorisExporter:
+    tables:
+      logs: otel_logs
+      traces: otel_traces
+      metrics: otel_metrics
+    historyDays: 7
+    createHistoryDays: 3
+    replicationNum: 1
+    timezone: Asia/Shanghai
+    timeout: 60s
+    sendingQueue:
+      enabled: true
+      numConsumers: 10
+      queueSize: 1000
+
+  # Batch processor
+  batch:
+    timeout: 5s
+    sendBatchSize: 10000
+    sendBatchMaxSize: 11000
+
+  # Memory limiter
+  memoryLimiter:
+    checkInterval: 1s
+    limitMib: 1024
+    spikeLimitMib: 256
+
+  # Service ports
+  ports:
+    otlpGrpc: 4317
+    otlpHttp: 4318
+    metrics: 8888
+    healthCheck: 13133
+
+  # Debug exporter (disable in production)
+  debug:
+    enabled: true
+    verbosity: basic
+
+  # ---------------------------------------------------------------------------
+  # Self-Monitoring Configuration
+  # ---------------------------------------------------------------------------
+  selfMonitoring:
+    enabled: true
+
+    # Host metrics receiver - collects system metrics (CPU, memory, disk, network)
+    hostmetrics:
+      enabled: true
+      collectionInterval: 15s
+      scrapers:
+        cpu: true
+        memory: true
+        disk: true
+        filesystem: true
+        network: true
+        load: true
+        processes: true
+
+    # Prometheus receiver - scrape collector's own metrics
+    prometheus:
+      enabled: true
+      scrapeInterval: 15s
+      jobName: otel-collector
+      labels:
+        service: otel-collector
+        env: kubernetes
+
+# =============================================================================
+# Grafana Configuration
+# =============================================================================
+grafana:
+  enabled: true
+
+  image:
+    tag: "11.4.0"
+
+  adminUser: admin
+  adminPassword: admin
+
+  # Plugins to install (doris-app is installed via initContainer)
+  plugins:
+    - grafana-clock-panel
+    - grafana-simple-json-datasource
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+  persistence:
+    enabled: false
+    size: 10Gi
+    storageClassName: ""
+
+# =============================================================================
+# Doris App Plugin for Grafana
+# =============================================================================
+dorisPlugin:
+  enabled: true
+  # Plugin + Dashboards image (build from images/doris-plugin/)
+  image:
+    repository: dog-grafana-assets
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+
+# =============================================================================
+# Ingress Configuration
+# =============================================================================
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: dog.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: grafana
+  tls: []

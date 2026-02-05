@@ -1,0 +1,107 @@
+🐕 DOGStack - Doris OpenTelemetry Grafana with Doris App Plugin
+
+Thank you for installing {{ .Chart.Name }}!
+
+=============================================================================
+DEPLOYMENT SUMMARY
+=============================================================================
+
+{{- if eq .Values.doris.mode "internal" }}
+📦 Doris Mode: INTERNAL (managed by DOGStack)
+   - DorisCluster: {{ include "dog.doris.clusterName" . }}
+   - FE Replicas: {{ .Values.doris.internal.cluster.fe.replicas }}
+   - BE Replicas: {{ .Values.doris.internal.cluster.be.replicas }}
+{{- else }}
+📦 Doris Mode: EXTERNAL
+   - Host: {{ .Values.doris.external.host }}
+   - Port: {{ .Values.doris.external.port }}
+{{- end }}
+
+{{- if .Values.otel.enabled }}
+📡 OpenTelemetry Collector: ENABLED
+   - OTLP gRPC: {{ .Values.otel.ports.otlpGrpc }}
+   - OTLP HTTP: {{ .Values.otel.ports.otlpHttp }}
+   - Metrics: {{ .Values.otel.ports.metrics }}
+{{- else }}
+📡 OpenTelemetry Collector: DISABLED
+{{- end }}
+
+{{- if .Values.grafana.enabled }}
+📊 Grafana: ENABLED
+   - Service: {{ include "dog.grafana.fullname" . }}
+   - Port: {{ .Values.grafana.service.port }}
+{{- else }}
+📊 Grafana: DISABLED
+{{- end }}
+
+=============================================================================
+ACCESS INSTRUCTIONS
+=============================================================================
+
+{{- if .Values.grafana.enabled }}
+1. Access Grafana:
+
+   # Port forward to Grafana
+   kubectl port-forward svc/{{ include "dog.grafana.fullname" . }} 3000:{{ .Values.grafana.service.port }} -n {{ .Release.Namespace }}
+
+   # Open in browser
+   http://localhost:3000
+
+   # Login credentials
+   Username: {{ .Values.grafana.adminUser }}
+   Password: {{ .Values.grafana.adminPassword }}
+{{- end }}
+
+{{- if .Values.otel.enabled }}
+
+2. Send telemetry data to OTel Collector:
+
+   # From within the cluster
+   OTLP gRPC: {{ include "dog.otel.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.otel.ports.otlpGrpc }}
+   OTLP HTTP: {{ include "dog.otel.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.otel.ports.otlpHttp }}
+
+   # Port forward for local testing
+   kubectl port-forward svc/{{ include "dog.otel.fullname" . }} 4317:{{ .Values.otel.ports.otlpGrpc }} 4318:{{ .Values.otel.ports.otlpHttp }} -n {{ .Release.Namespace }}
+{{- end }}
+
+{{- if eq .Values.doris.mode "internal" }}
+
+3. Access Doris:
+
+   # Port forward to Doris FE (MySQL protocol)
+   kubectl port-forward svc/{{ include "dog.doris.clusterName" . }}-fe 9030:9030 -n {{ .Release.Namespace }}
+
+   # Connect via MySQL client
+   mysql -h 127.0.0.1 -P 9030 -u root
+
+   # Port forward to Doris FE Web UI
+   kubectl port-forward svc/{{ include "dog.doris.clusterName" . }}-fe 8030:8030 -n {{ .Release.Namespace }}
+   # Open http://localhost:8030
+{{- end }}
+
+=============================================================================
+VERIFY INSTALLATION
+=============================================================================
+
+# Check all pods are running
+kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+# Check services
+kubectl get svc -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- if eq .Values.doris.mode "internal" }}
+# Check DorisCluster status
+kubectl get doriscluster -n {{ .Release.Namespace }}
+{{- end }}
+
+=============================================================================
+DOCUMENTATION
+=============================================================================
+
+For more information, visit:
+- DOGStack Documentation: https://github.com/apache/doris
+- Apache Doris: https://doris.apache.org
+- OpenTelemetry: https://opentelemetry.io
+- Grafana: https://grafana.com
+
+Happy Observing! 🔭
