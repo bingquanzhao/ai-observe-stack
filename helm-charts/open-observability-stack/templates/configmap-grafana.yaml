@@ -7,9 +7,9 @@ Grafana Provisioning ConfigMaps
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "dog.grafana.fullname" . }}-datasources
+  name: {{ include "oos.grafana.fullname" . }}-datasources
   labels:
-    {{- include "dog.labels" . | nindent 4 }}
+    {{- include "oos.labels" . | nindent 4 }}
     app.kubernetes.io/component: grafana
     grafana_datasource: "1"
 data:
@@ -23,9 +23,9 @@ data:
       - name: Doris
         type: mysql
         uid: doris
-        url: {{ include "dog.doris.mysqlEndpoint" . }}
-        user: {{ include "dog.doris.user" . }}
-        database: {{ include "dog.doris.database" . }}
+        url: {{ include "oos.doris.mysqlEndpoint" . }}
+        user: {{ include "oos.doris.user" . }}
+        database: {{ include "oos.doris.database" . }}
         isDefault: true
         jsonData:
           maxOpenConns: 10
@@ -33,7 +33,7 @@ data:
           connMaxLifetime: 14400
           tlsSkipVerify: true
         secureJsonData:
-          password: "{{ include "dog.doris.password" . }}"
+          password: "{{ include "oos.doris.password" . }}"
         editable: true
 
 ---
@@ -41,9 +41,9 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "dog.grafana.fullname" . }}-dashboard-providers
+  name: {{ include "oos.grafana.fullname" . }}-dashboard-providers
   labels:
-    {{- include "dog.labels" . | nindent 4 }}
+    {{- include "oos.labels" . | nindent 4 }}
     app.kubernetes.io/component: grafana
 data:
   dashboards.yaml: |
@@ -51,14 +51,14 @@ data:
     apiVersion: 1
 
     providers:
-      - name: 'DOGStack Observability Dashboards'
+      - name: 'Open Observability Stack Dashboards'
         orgId: 1
-        folder: 'DOGStack Observability'
-        folderUid: dogstack-observability
+        folder: 'Open Observability Stack'
+        folderUid: oos-observability
         type: file
         disableDeletion: false
         updateIntervalSeconds: 30
         allowUiUpdates: true
         options:
-          path: /var/lib/grafana/dashboards/dog
+          path: /var/lib/grafana/dashboards/oos
 {{- end }}

@@ -1,7 +1,7 @@
 # =============================================================================
-# DOGStack - Doris OpenTelemetry Grafana with Doris App Plugin
+# Open Observability Stack
 # =============================================================================
-# Default values for DOGStack helm chart.
+# Default values for Open Observability Stack helm chart.
 
 # -----------------------------------------------------------------------------
 # Global settings
@@ -11,9 +11,9 @@ global:
   fullnameOverride: ""
 
 # -----------------------------------------------------------------------------
-# DOGStack settings
+# Open Observability Stack settings
 # -----------------------------------------------------------------------------
-dogstack:
+openObservabilityStack:
   # Timezone for the entire stack (Doris + OTel Collector)
   # Example: Asia/Shanghai, America/New_York, Europe/London
   # Default: UTC
@@ -251,7 +251,7 @@ ingress:
   className: ""
   annotations: {}
   hosts:
-    - host: dog.local
+    - host: oos.local
       paths:
         - path: /
           pathType: Prefix

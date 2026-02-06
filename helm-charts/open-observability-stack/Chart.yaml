@@ -1,14 +1,13 @@
 apiVersion: v2
-name: dogstack
-description: DOGStack - Doris OpenTelemetry Grafana with Doris App Plugin. A complete observability stack using Apache Doris as the storage backend.
+name: open-observability-stack
+description: Open Observability Stack - A complete observability stack using Apache Doris as the storage backend for traces, metrics, and logs, with OpenTelemetry and Grafana.
 type: application
 version: 1.0.0
 appVersion: "1.0.0"
 
 keywords:
   - observability
-  - dogstack
-  - DOG
+  - open-observability-stack
   - doris
   - grafana
   - opentelemetry
@@ -17,7 +16,7 @@ keywords:
   - metrics
   - logs
 
-home: https://github.com/velodb/DogStack.git
+home: https://github.com/velodb/open-observability-stack.git
 icon: https://charts.velodb.io/images/doris.jpg
 
 maintainers:

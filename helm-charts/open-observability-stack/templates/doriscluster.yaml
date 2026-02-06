@@ -5,21 +5,21 @@ DorisCluster CR - Only created when using internal Doris mode
 apiVersion: doris.selectdb.com/v1
 kind: DorisCluster
 metadata:
-  name: {{ include "dog.doris.clusterName" . }}
+  name: {{ include "oos.doris.clusterName" . }}
   labels:
-    {{- include "dog.labels" . | nindent 4 }}
+    {{- include "oos.labels" . | nindent 4 }}
     app.kubernetes.io/name: doriscluster
-    app.kubernetes.io/instance: {{ include "dog.doris.clusterName" . }}
+    app.kubernetes.io/instance: {{ include "oos.doris.clusterName" . }}
     app.kubernetes.io/part-of: doris-operator
 spec:
   # Frontend (FE) Specification
   feSpec:
     replicas: {{ .Values.doris.internal.cluster.fe.replicas }}
     image: {{ .Values.doris.internal.cluster.fe.image }}
-    {{- if and .Values.dogstack.timezone (ne .Values.dogstack.timezone "UTC") }}
+    {{- if and .Values.openObservabilityStack.timezone (ne .Values.openObservabilityStack.timezone "UTC") }}
     envVars:
       - name: TZ
-        value: {{ .Values.dogstack.timezone | quote }}
+        value: {{ .Values.openObservabilityStack.timezone | quote }}
     {{- end }}
     {{- with .Values.doris.internal.cluster.fe.resources }}
     requests:
@@ -52,10 +52,10 @@ spec:
   beSpec:
     replicas: {{ .Values.doris.internal.cluster.be.replicas }}
     image: {{ .Values.doris.internal.cluster.be.image }}
-    {{- if and .Values.dogstack.timezone (ne .Values.dogstack.timezone "UTC") }}
+    {{- if and .Values.openObservabilityStack.timezone (ne .Values.openObservabilityStack.timezone "UTC") }}
     envVars:
       - name: TZ
-        value: {{ .Values.dogstack.timezone | quote }}
+        value: {{ .Values.openObservabilityStack.timezone | quote }}
     {{- end }}
     {{- with .Values.doris.internal.cluster.be.resources }}
     requests:

@@ -1,8 +1,8 @@
-# DOGStack Helm Chart
+# Open Observability Stack Helm Chart
 
 [English](./README.md)
 
-**DOGStack**（Doris OpenTelemetry Grafana with Doris App Plugin）是一个完整的可观测性技术栈，使用 Apache Doris 作为 Traces、Metrics 和 Logs 的存储后端。
+**Open Observability Stack** 是一个完整的可观测性技术栈，使用 Apache Doris 作为 Traces、Metrics 和 Logs 的存储后端，结合 OpenTelemetry 和 Grafana。
 
 默认情况下，Helm Chart 会部署所有核心组件，包括：
 
@@ -38,65 +38,36 @@ Chart 支持 Kubernetes 标准最佳实践，包括：
 
 ## 部署步骤
 
-### 1. 下载并解压 DOGStack
+### 1. 添加 Helm 仓库
 
 ```bash
-wget https://justtmp-1308700295.cos.ap-hongkong.myqcloud.com/DOG-k8s.tar.gz
-tar -xzf DOG-k8s.tar.gz
-cd DOG-k8s
-```
-
-### 2. 添加 Helm 仓库
-
-添加 Doris Operator 所需的 Helm 仓库：
-
-```bash
-helm repo add doris-repo https://charts.selectdb.com
+helm repo add open-observability-stack https://charts.velodb.io
 helm repo update
 ```
 
-### 3. 创建命名空间
+### 2. 创建命名空间
 
 ```bash
-kubectl create namespace dogstack
+kubectl create namespace open-observability-stack
 ```
 
-### 4. 构建并加载插件镜像（必需）
-
-DOGStack 使用自定义的 Grafana 插件镜像，插件会在构建时从 S3/URL 自动下载：
-
-```bash
-cd images/doris-plugin
-
-# 构建镜像（插件自动从默认 URL 下载）
-docker build -t dog-grafana-assets:v1.0.1 .
-
-# 或指定自定义插件 URL
-docker build -t dog-grafana-assets:v1.0.1 \
-  --build-arg DORIS_APP_URL=https://your-s3-bucket/doris-app-1.0.0.zip .
-
-# Kind 集群加载镜像
-kind load docker-image dog-grafana-assets:v1.0.1 --name kind
-
-# 其他集群，推送到镜像仓库
-# docker tag dog-grafana-assets:v1.0.1 your-registry/dog-grafana-assets:v1.0.1
-# docker push your-registry/dog-grafana-assets:v1.0.1
-```
-
-### 5. 更新依赖
-
-```bash
-cd ../..
-helm dependency update .
-```
-
-### 6. 安装 DOGStack
+### 3. 安装 Open Observability Stack
 
 使用默认配置安装（内部 Doris 模式）：
 
 ```bash
-helm install dogstack . -n dogstack \
-  --set dorisPlugin.image.tag=v1.0.1
+helm install open-observability-stack open-observability-stack/open-observability-stack -n open-observability-stack
+```
+
+如果已有 Doris 集群，使用外部模式：
+
+```bash
+helm install open-observability-stack open-observability-stack/open-observability-stack -n open-observability-stack \
+  --set doris.mode=external \
+  --set doris.external.host=<DORIS_FE_HOST> \
+  --set doris.external.port=9030 \
+  --set doris.external.feHttpPort=8030 \
+  --set doris.internal.operator.enabled=false
 ```
 
 ---
@@ -106,37 +77,37 @@ helm install dogstack . -n dogstack \
 检查所有 Pod 是否正常运行：
 
 ```bash
-kubectl get pods -n dogstack
+kubectl get pods -n open-observability-stack
 ```
 
-预期输出：
+预期输出（Pod 名称前缀取决于 release 名称）：
 
 ```
 NAME                                READY   STATUS    RESTARTS   AGE
-dogstack-doris-fe-0                 1/1     Running   0          2m
-dogstack-doris-be-0                 1/1     Running   0          1m
-dogstack-grafana-xxx                1/1     Running   0          2m
-dogstack-otel-collector-0           1/1     Running   0          2m
-dogstack-otel-collector-1           1/1     Running   0          2m
+open-observability-stack-doris-fe-0                 1/1     Running   0          2m
+open-observability-stack-doris-be-0                 1/1     Running   0          1m
+open-observability-stack-grafana-xxx                1/1     Running   0          2m
+open-observability-stack-otel-collector-0           1/1     Running   0          2m
+open-observability-stack-otel-collector-1           1/1     Running   0          2m
 doris-operator-xxx                  1/1     Running   0          2m
 ```
 
 检查 DorisCluster 状态：
 
 ```bash
-kubectl get doriscluster -n dogstack
+kubectl get doriscluster -n open-observability-stack
 ```
 
 ---
 
 ## 端口转发
 
-端口转发可以让你访问和配置 DOGStack。生产环境建议配置 Ingress。
+端口转发可以让你访问和配置 Open Observability Stack。生产环境建议配置 Ingress。
 
 ### 访问 Grafana
 
 ```bash
-kubectl port-forward svc/dogstack-grafana 3000:3000 -n dogstack --address 0.0.0.0
+kubectl port-forward svc/open-observability-stack-grafana 3000:3000 -n open-observability-stack --address 0.0.0.0
 ```
 
 访问 http://localhost:3000（或 http://服务器IP:3000）
@@ -148,7 +119,7 @@ kubectl port-forward svc/dogstack-grafana 3000:3000 -n dogstack --address 0.0.0.
 ### 访问 OTel Collector
 
 ```bash
-kubectl port-forward svc/dogstack-otel-collector 4317:4317 4318:4318 -n dogstack --address 0.0.0.0
+kubectl port-forward svc/open-observability-stack-otel-collector 4317:4317 4318:4318 -n open-observability-stack --address 0.0.0.0
 ```
 
 发送遥测数据到：
@@ -159,13 +130,13 @@ kubectl port-forward svc/dogstack-otel-collector 4317:4317 4318:4318 -n dogstack
 
 ```bash
 # MySQL 协议
-kubectl port-forward svc/dogstack-doris-fe-service 9030:9030 -n dogstack
+kubectl port-forward svc/open-observability-stack-doris-fe-service 9030:9030 -n open-observability-stack
 
 # 通过 MySQL 客户端连接
 mysql -h 127.0.0.1 -P 9030 -u root
 
 # Web UI
-kubectl port-forward svc/dogstack-doris-fe-service 8030:8030 -n dogstack
+kubectl port-forward svc/open-observability-stack-doris-fe-service 8030:8030 -n open-observability-stack
 ```
 
 ---
@@ -175,8 +146,7 @@ kubectl port-forward svc/dogstack-doris-fe-service 8030:8030 -n dogstack
 可以使用 `--set` 参数自定义设置：
 
 ```bash
-helm install dogstack . -n dogstack \
-  --set dorisPlugin.image.tag=v1.0.1 \
+helm install open-observability-stack open-observability-stack/open-observability-stack -n open-observability-stack \
   --set grafana.adminPassword=mysecretpassword
 ```
 
@@ -184,16 +154,17 @@ helm install dogstack . -n dogstack \
 
 ```bash
 # 获取默认配置
-helm show values . > my-values.yaml
+helm show values open-observability-stack/open-observability-stack > my-values.yaml
 
 # 编辑后安装
-helm install dogstack . -n dogstack -f my-values.yaml
+helm install open-observability-stack open-observability-stack/open-observability-stack -n open-observability-stack -f my-values.yaml
 ```
 
 ### 主要配置参数
 
 | 参数 | 描述 | 默认值 |
 |------|------|--------|
+| `openObservabilityStack.timezone` | 整个技术栈的时区（Doris + OTel Collector） | `UTC` |
 | `doris.mode` | Doris 部署模式（`internal` / `external`） | `internal` |
 | `doris.database` | 可观测性数据存储的数据库名 | `otel` |
 | `doris.internal.cluster.fe.replicas` | FE 副本数 | `1` |
@@ -205,7 +176,27 @@ helm install dogstack . -n dogstack -f my-values.yaml
 | `dorisPlugin.enabled` | 启用 Doris App 插件 | `true` |
 | `ingress.enabled` | 启用 Ingress | `false` |
 
-完整参数列表请参考 [values.yaml](./values.yaml)。
+完整参数列表请参考 [values.yaml](./open-observability-stack/values.yaml)。
+
+### 时区配置
+
+默认情况下，所有组件使用 **UTC** 时区。如需使用其他时区（如 `Asia/Shanghai`），设置 `openObservabilityStack.timezone`：
+
+```bash
+helm install open-observability-stack open-observability-stack/open-observability-stack -n open-observability-stack \
+  --set openObservabilityStack.timezone=Asia/Shanghai
+```
+
+此配置会同时应用到 Doris 和 OTel Collector，确保整个技术栈的时间处理一致。
+
+**支持的时区格式：**
+- `UTC`（默认）
+- `Asia/Shanghai`
+- `America/New_York`
+- `Europe/London`
+- 任何有效的 [IANA 时区](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+
+> **注意：** 时区一致性非常重要。Doris 和 OTel Collector 之间的时区不匹配会导致 Grafana 仪表盘显示错误的时间范围（例如，"Last 15 minutes" 查询返回无数据）。
 
 ---
 
@@ -219,7 +210,7 @@ helm install dogstack . -n dogstack -f my-values.yaml
 kubectl create secret generic doris-credentials \
   --from-literal=username=root \
   --from-literal=password=mysecretpassword \
-  -n dogstack
+  -n open-observability-stack
 ```
 
 ### 在 values.yaml 中引用
@@ -241,7 +232,7 @@ doris:
 如果使用现有的 Doris 集群，需要禁用内部 Doris 并指定外部连接信息：
 
 ```bash
-helm install dogstack . -n dogstack \
+helm install open-observability-stack open-observability-stack/open-observability-stack -n open-observability-stack \
   --set doris.mode=external \
   --set doris.external.host=172.19.0.12 \
   --set doris.external.port=9030 \
@@ -249,8 +240,7 @@ helm install dogstack . -n dogstack \
   --set doris.external.beHttpPort=8040 \
   --set doris.external.user=root \
   --set doris.external.password="" \
-  --set doris.internal.operator.enabled=false \
-  --set dorisPlugin.image.tag=v1.0.1
+  --set doris.internal.operator.enabled=false
 ```
 
 或使用 `values.yaml` 文件：
@@ -272,7 +262,7 @@ doris:
 ```
 
 ```bash
-helm install dogstack . -n dogstack -f values-external-doris.yaml
+helm install open-observability-stack . -n open-observability-stack -f values-external-doris.yaml
 ```
 
 > **注意：** 使用外部 Doris 时，`feHttpPort` 用于 Stream Load 操作（默认 8030）。如果你的 Doris FE 使用不同的 HTTP 端口，请确保正确设置。
@@ -286,8 +276,7 @@ helm install dogstack . -n dogstack -f values-external-doris.yaml
 适用于本地开发的最小资源配置：
 
 ```bash
-helm install dogstack . -n dogstack -f values-dev.yaml \
-  --set dorisPlugin.image.tag=v1.0.1
+helm install open-observability-stack open-observability-stack/open-observability-stack -n open-observability-stack -f values-dev.yaml
 ```
 
 特点：
@@ -301,8 +290,7 @@ helm install dogstack . -n dogstack -f values-dev.yaml \
 高可用配置：
 
 ```bash
-helm install dogstack . -n dogstack -f values-prod.yaml \
-  --set dorisPlugin.image.tag=v1.0.1 \
+helm install open-observability-stack open-observability-stack/open-observability-stack -n open-observability-stack -f values-prod.yaml \
   --set grafana.adminPassword="CHANGE_ME_IN_PRODUCTION"
 ```
 
@@ -349,15 +337,15 @@ ingress:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
   hosts:
-    - host: dogstack.example.com
+    - host: oos.example.com
       paths:
         - path: /
           pathType: Prefix
           service: grafana
   tls:
-    - secretName: dogstack-tls
+    - secretName: oos-tls
       hosts:
-        - dogstack.example.com
+        - oos.example.com
 ```
 
 ### 持久化存储
@@ -394,41 +382,41 @@ grafana:
 升级到新版本：
 
 ```bash
-helm upgrade dogstack . -n dogstack -f your-values.yaml
+helm upgrade open-observability-stack open-observability-stack/open-observability-stack -n open-observability-stack -f your-values.yaml
 ```
 
 查看当前 Release：
 
 ```bash
-helm list -n dogstack
+helm list -n open-observability-stack
 ```
 
 ---
 
-## 卸载 DOGStack
+## 卸载 Open Observability Stack
 
 删除部署：
 
 ```bash
-helm uninstall dogstack -n dogstack
+helm uninstall open-observability-stack -n open-observability-stack
 ```
 
 如果使用内部 Doris，可能需要手动删除 DorisCluster CR：
 
 ```bash
-kubectl delete doriscluster -n dogstack --all
+kubectl delete doriscluster -n open-observability-stack --all
 ```
 
 如需删除所有数据，删除 PVC：
 
 ```bash
-kubectl delete pvc -n dogstack --all
+kubectl delete pvc -n open-observability-stack --all
 ```
 
 删除命名空间（可选）：
 
 ```bash
-kubectl delete namespace dogstack
+kubectl delete namespace open-observability-stack
 ```
 
 ---
@@ -439,39 +427,39 @@ kubectl delete namespace dogstack
 
 ```bash
 # OTel Collector 日志
-kubectl logs -l app.kubernetes.io/name=dogstack-otel-collector -n dogstack
+kubectl logs -l app.kubernetes.io/name=open-observability-stack-otel-collector -n open-observability-stack
 
 # Grafana 日志
-kubectl logs -l app.kubernetes.io/name=dogstack-grafana -n dogstack
+kubectl logs -l app.kubernetes.io/name=open-observability-stack-grafana -n open-observability-stack
 
 # Doris FE 日志
-kubectl logs -l app.kubernetes.io/component=fe -n dogstack
+kubectl logs -l app.kubernetes.io/component=fe -n open-observability-stack
 
 # Doris BE 日志
-kubectl logs -l app.kubernetes.io/component=be -n dogstack
+kubectl logs -l app.kubernetes.io/component=be -n open-observability-stack
 ```
 
 ### 调试安装失败
 
 ```bash
-helm install dogstack . -n dogstack --debug --dry-run
+helm install open-observability-stack open-observability-stack/open-observability-stack -n open-observability-stack --debug --dry-run
 ```
 
 ### 验证部署
 
 ```bash
-kubectl get pods -n dogstack
-kubectl get svc -n dogstack
-kubectl get doriscluster -n dogstack
+kubectl get pods -n open-observability-stack
+kubectl get svc -n open-observability-stack
+kubectl get doriscluster -n open-observability-stack
 ```
 
 ### 常见问题
 
 | 问题 | 解决方案 |
 |------|----------|
-| OTel Collector CrashLoopBackOff | 检查 Doris 连接：`kubectl logs dogstack-otel-collector-0 -n dogstack` |
-| Grafana 插件未加载 | 验证插件镜像已加载：`kubectl describe pod -l app.kubernetes.io/name=dogstack-grafana -n dogstack` |
-| Doris FE 未就绪 | 检查 Doris Operator 日志：`kubectl logs -l app.kubernetes.io/name=doris-operator -n dogstack` |
+| OTel Collector CrashLoopBackOff | 检查 Doris 连接：`kubectl logs open-observability-stack-otel-collector-0 -n open-observability-stack` |
+| Grafana 插件未加载 | 验证插件镜像已加载：`kubectl describe pod -l app.kubernetes.io/name=open-observability-stack-grafana -n open-observability-stack` |
+| Doris FE 未就绪 | 检查 Doris Operator 日志：`kubectl logs -l app.kubernetes.io/name=doris-operator -n open-observability-stack` |
 
 ---
 
@@ -491,7 +479,7 @@ kubectl get doriscluster -n dogstack
 │                                  ▼                                       │
 │              ┌───────────────────────────────────┐                       │
 │              │   OpenTelemetry Collector         │                       │
-│              │   (dogstack-otel-collector)       │                       │
+│              │   (open-observability-stack-otel-collector)       │                       │
 │              └───────────────────┬───────────────┘                       │
 │                                  │ Doris Exporter (Stream Load)         │
 │                                  ▼                                       │
@@ -500,13 +488,13 @@ kubectl get doriscluster -n dogstack
 │              │   ┌─────────┐    ┌─────────┐      │                       │
 │              │   │   FE    │    │   BE    │      │                       │
 │              │   └─────────┘    └─────────┘      │                       │
-│              │   (dogstack-doris)                │                       │
+│              │   (open-observability-stack-doris)                │                       │
 │              └───────────────────┬───────────────┘                       │
 │                                  │ MySQL 协议 (9030)                    │
 │                                  ▼                                       │
 │              ┌───────────────────────────────────┐                       │
 │              │   Grafana                         │                       │
-│              │   (dogstack-grafana)              │                       │
+│              │   (open-observability-stack-grafana)              │                       │
 │              │   + Doris App 插件                │                       │
 │              │   + 预置仪表盘                    │                       │
 │              └───────────────────────────────────┘                       │
@@ -524,11 +512,11 @@ kubectl get doriscluster -n dogstack
 
 | 服务 | 端口 | 描述 |
 |------|------|------|
-| `dogstack-otel-collector` | 4317 | OTLP gRPC 接收器 |
-| `dogstack-otel-collector` | 4318 | OTLP HTTP 接收器 |
-| `dogstack-otel-collector` | 8888 | Prometheus 指标 |
-| `dogstack-grafana` | 3000 | Grafana Web UI |
-| `dogstack-doris-fe-service` | 9030 | Doris MySQL 协议 |
-| `dogstack-doris-fe-service` | 8030 | Doris FE HTTP (Stream Load) |
-| `dogstack-doris-be-service` | 8040 | Doris BE HTTP |
+| `open-observability-stack-otel-collector` | 4317 | OTLP gRPC 接收器 |
+| `open-observability-stack-otel-collector` | 4318 | OTLP HTTP 接收器 |
+| `open-observability-stack-otel-collector` | 8888 | Prometheus 指标 |
+| `open-observability-stack-grafana` | 3000 | Grafana Web UI |
+| `open-observability-stack-doris-fe-service` | 9030 | Doris MySQL 协议 |
+| `open-observability-stack-doris-fe-service` | 8030 | Doris FE HTTP (Stream Load) |
+| `open-observability-stack-doris-be-service` | 8040 | Doris BE HTTP |
 

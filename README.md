@@ -1,172 +1,182 @@
-As shown in the architecture, DOG Stack consists of four components: data collection tools, OpenTelemetry Collector, Doris and Grafana with Doris App. This deployment documentation will focus on the last three components. And the 'Ingesting Data' documentations will focus on the first components.
+# Deployment
 
-DOG Stack offers multiple deployment options for different environment and purpose.
+This guide covers three ways to deploy Open Observability Stack. Choose the method that fits your environment:
+
+| Method | Best for |
+|--------|----------|
+| Docker Compose | Local testing, development, PoC |
+| Kubernetes (Helm) | Production, scalable environments |
+| Manual | Custom setups, existing infrastructure |
+
+Each method deploys the core components: OpenTelemetry Collector, Apache Doris, and Grafana. For data collection configuration, see [Ingesting Data](docs/ingesting-data.md).
 
 # Docker Compose
 
-Suitable for local testing, development, and proof of concepts (PoC).
+Best for local testing, development, and proof of concepts (PoC).
 
 ## Prerequisites
 
-- Docker and Docker Compose installed
+- Docker Engine (v20.10+)
+- Docker Compose (v2.0+)
 
-## Deployment Steps
+## Deploy
 
-### 1. Clone Repository
+1. Clone the repository:
 
-```bash
-git clone https://github.com/velodb/DogStack.git
-cd DogStack/docker
-```
+   ```bash
+   git clone https://github.com/velodb/open-observability-stack.git
+   cd open-observability-stack/docker
+   ```
 
-### 2. Start Services
+2. If you already have an existing Apache Doris cluster, configure the connection and start in external mode:
 
-```bash
-docker compose up -d
-```
+   ```bash
+   cp .env.example .env
+   ```
 
-### 3. View Logs (Optional)
+   Edit `.env` with your Doris connection details:
 
-```bash
-docker compose logs -f
-```
+   ```bash
+   DORIS_FE_HTTP_ENDPOINT=http://<DORIS_FE_HOST>:<FE_HTTP_PORT>
+   DORIS_FE_MYSQL_ENDPOINT=<DORIS_FE_HOST>:<FE_MYSQL_PORT>
+   DORIS_USERNAME=root
+   DORIS_PASSWORD=
+   ```
 
-### 4. Access Grafana
+   Then start the services (OTel Collector + Grafana only):
 
-Visit http://localhost:3000 to access the Grafana UI.
+   ```bash
+   docker compose -f docker-compose-without-doris.yaml up -d
+   ```
 
-Default credentials:
-- Username: `admin`
-- Password: `admin`
+3. If you don't have a Doris cluster, simply start the full stack with the built-in Doris:
 
-## Access Endpoints
+   ```bash
+   docker compose up -d
+   ```
 
-| Service | URL/Endpoint | Credentials |
-|---------|--------------|-------------|
+4. Verify the services are running:
+
+   ```bash
+   docker compose ps
+   ```
+
+   All services should show `running` status.
+
+5. Access Grafana at http://localhost:3000 and log in with `admin` / `admin`.
+
+## Service endpoints
+
+| Service | Endpoint | Credentials |
+|---------|----------|-------------|
 | Grafana | http://localhost:3000 | admin / admin |
 | Doris FE UI | http://localhost:8030 | root / (empty) |
 | Doris MySQL | localhost:9030 | root / (empty) |
 | OTel gRPC | localhost:4317 | - |
 | OTel HTTP | localhost:4318 | - |
 
-## Stop Services
+> **Note:** Doris FE UI and Doris MySQL endpoints are only available with the built-in Doris. When using an external Doris, access your existing cluster directly.
+
+## Stop and clean up
+
+To stop services while preserving data:
 
 ```bash
-# Stop services (preserve data)
 docker compose down
+```
 
-# Stop services and remove data volumes
+To stop services and remove all data:
+
+```bash
 docker compose down -v
 ```
 
 # Kubernetes (Helm)
 
-Suitable for production deployments, development environments, and proof of concepts.
+Best for production deployments, development environments, and scalable setups.
 
 ## Prerequisites
 
-- Kubernetes 1.20+
-- Helm 3.0+
-- `kubectl` configured to interact with your cluster
-- PV provisioner support (for persistence)
+- Kubernetes cluster (v1.20+)
+- Helm (v3.0+)
+- kubectl configured to access your cluster
+- PersistentVolume provisioner (for data persistence)
 
-## Deployment Steps
+## Deploy
 
-### 1. Clone Repository
+1. Add the Open Observability Stack Helm repository:
 
-```bash
-git clone https://github.com/velodb/DogStack.git
-cd DogStack/helm-charts
-```
+   ```bash
+   helm repo add open-observability-stack https://charts.velodb.io
+   helm repo update
+   ```
 
-### 2. Add Helm Repository
+2. Create a namespace for Open Observability Stack:
 
-Add the required Helm repository for Doris Operator:
+   ```bash
+   kubectl create namespace open-observability-stack
+   ```
 
-```bash
-helm repo add doris-repo https://charts.selectdb.com
-helm repo update
-```
+3. Install Open Observability Stack:
 
-### 3. Create Namespace
+   ```bash
+   helm install my-oos open-observability-stack/open-observability-stack -n open-observability-stack
+   ```
 
-```bash
-kubectl create namespace dogstack
-```
+   If you have an existing Doris cluster, use external mode instead:
 
-### 4. Build and Load Plugin Image (Required)
+   ```bash
+   helm install my-oos open-observability-stack/open-observability-stack -n open-observability-stack \
+     --set doris.mode=external \
+     --set doris.external.host=<DORIS_FE_HOST> \
+     --set doris.external.port=9030 \
+     --set doris.external.feHttpPort=8030 \
+     --set doris.internal.operator.enabled=false
+   ```
 
-DOGStack uses a custom Grafana plugin image. The plugin is downloaded from S3/URL during build:
+4. Verify all pods are running:
 
-```bash
-cd images/doris-plugin
+   ```bash
+   kubectl get pods -n open-observability-stack
+   ```
 
-# Build image (plugin is auto-downloaded from default URL)
-docker build -t dog-grafana-assets:v1.0.1 .
+   Wait until all pods show `Running` status.
 
-# For Kind cluster
-kind load docker-image dog-grafana-assets:v1.0.1 --name kind
+5. Access Grafana:
 
-# For other clusters, push to your registry
-# docker tag dog-grafana-assets:v1.0.1 your-registry/dog-grafana-assets:v1.0.1
-# docker push your-registry/dog-grafana-assets:v1.0.1
-```
+   ```bash
+   kubectl port-forward svc/my-oos-grafana 3000:3000 -n open-observability-stack
+   ```
 
-### 5. Update Dependencies
+   Open http://localhost:3000 and log in with `admin` / `admin`.
 
-```bash
-cd ../..
-helm dependency update .
-```
+## Service endpoints
 
-### 6. Install DOGStack
-
-Install with default values (internal Doris):
-
-```bash
-helm install dogstack . -n dogstack \
-  --set dorisPlugin.image.tag=v1.0.1
-```
-
-Or install with external Doris:
-
-```bash
-helm install dogstack . -n dogstack \
-  --set dorisPlugin.image.tag=v1.0.1 \
-  --set doris.mode=external \
-  --set doris.external.host=<DORIS_FE_HOST> \
-  --set doris.external.port=9030 \
-  --set doris.external.feHttpPort=8030 \
-  --set doris.internal.operator.enabled=false
-```
-
-### 7. Verify Installation
-
-```bash
-kubectl get pods -n dogstack
-```
-
-### 8. Access Grafana
-
-```bash
-kubectl port-forward svc/dogstack-grafana 3000:3000 -n dogstack
-```
-
-Visit http://localhost:3000 (admin / admin)
+| Service | Port-forward command |
+|---------|---------------------|
+| Grafana | `kubectl port-forward svc/my-oos-grafana 3000:3000 -n open-observability-stack` |
+| Doris FE UI | `kubectl port-forward svc/my-oos-doris-fe 8030:8030 -n open-observability-stack` |
+| Doris MySQL | `kubectl port-forward svc/my-oos-doris-fe 9030:9030 -n open-observability-stack` |
 
 ## Uninstall
 
 ```bash
-helm uninstall dogstack -n dogstack
-kubectl delete namespace dogstack
+helm uninstall my-oos -n open-observability-stack
+kubectl delete namespace open-observability-stack
 ```
 
 # Manually
 
-1. Deploy a Doris cluster following the Doris [deployment documentation](https://doris.apache.org/docs/4.x/install/preparation/env-checking). If there is a Doris cluster, this step can be skipped.
-2. Deploy the OpenTelemetry Collector following the [OpenTelemetry deployment documentation](https://opentelemetry.io/docs/collector/install/).
-3. Deploy the Grafana UI following the [Grafana deployment documentation](https://grafana.com/docs/grafana/latest/setup-grafana/installation/).
-4. Navigate the DOG Stack web UI
+Best for custom setups or integrating with existing infrastructure.
 
-Visit http://localhost:3000 to access the Grafana UI inside DOG Stack.
+1. Deploy Apache Doris following the [Doris deployment documentation](https://doris.apache.org/docs/4.x/install/preparation/env-checking).
+   Skip this step if you already have a Doris cluster.
+
+2. Deploy OpenTelemetry Collector following the [installation guide](https://opentelemetry.io/docs/collector/install/).
+
+3. Deploy Grafana following the [Grafana installation documentation](https://grafana.com/docs/grafana/latest/setup-grafana/installation/).
+
+4. Install the Open Observability Stack Grafana plugin. See [Plugin Installation](docs/plugin-installation.md).
+
+After completing all steps, access Grafana at http://localhost:3000.
 

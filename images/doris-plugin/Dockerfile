@@ -1,13 +1,13 @@
 # syntax=docker/dockerfile:1
-# DOGStack Grafana Assets Image
+# Open Observability Stack Grafana Assets Image
 # Contains: Doris App Plugin + Dashboards
 #
 # Build:
-#   cd DOG-k8s/images/doris-plugin
-#   docker build -t your-registry/dog-grafana-assets:v1.0.0 .
+#   cd open-observability-stack/images/doris-plugin
+#   docker build -t your-registry/oos-grafana-assets:v1.0.0 .
 #
 # Build with custom plugin URL:
-#   docker build -t dog-grafana-assets:v1.0.0 \
+#   docker build -t oos-grafana-assets:v1.0.0 \
 #     --build-arg DORIS_APP_URL=https://your-s3-bucket/doris-app-1.0.0.zip .
 
 FROM alpine:3.19
@@ -33,7 +33,7 @@ COPY dashboards/ /assets/dashboards/
 RUN chmod -R 755 /assets/dashboards/
 
 # Metadata
-LABEL org.opencontainers.image.title="DOGStack Grafana Assets"
+LABEL org.opencontainers.image.title="Open Observability Stack Grafana Assets"
 LABEL org.opencontainers.image.description="Doris App Plugin and Dashboards for Grafana"
 LABEL org.opencontainers.image.version="${DORIS_APP_VERSION}"
 
