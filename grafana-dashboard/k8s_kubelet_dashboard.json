@@ -117,7 +117,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 60) * 60 AS time,\n  CAST(resource_attributes['k8s.pod.name'] AS VARCHAR) AS metric,\n  AVG(value) * 1000 AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.pod.cpu.usage'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${namespace:raw}' = 'All' OR CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) = '${namespace:raw}')\n  AND ('${node:raw}' = 'All' OR CAST(resource_attributes['k8s.node.name'] AS VARCHAR) = '${node:raw}')\n  AND ('${deployment:raw}' = 'All' OR CAST(resource_attributes['k8s.deployment.name'] AS VARCHAR) = '${deployment:raw}')\n  AND ('${pod:raw}' = 'All' OR CAST(resource_attributes['k8s.pod.name'] AS VARCHAR) = '${pod:raw}')\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 20) * 20 AS time,\n  CAST(resource_attributes['k8s.pod.name'] AS VARCHAR) AS metric,\n  AVG(value) * 1000 AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.pod.cpu.usage'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${namespace:raw}' = 'All' OR CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) = '${namespace:raw}')\n  AND ('${node:raw}' = 'All' OR CAST(resource_attributes['k8s.node.name'] AS VARCHAR) = '${node:raw}')\n  AND ('${deployment:raw}' = 'All' OR CAST(resource_attributes['k8s.deployment.name'] AS VARCHAR) = '${deployment:raw}')\n  AND ('${pod:raw}' = 'All' OR CAST(resource_attributes['k8s.pod.name'] AS VARCHAR) = '${pod:raw}')\nGROUP BY 1, 2\nORDER BY 1",
           "refId": "A"
         }
       ],
@@ -179,11 +179,139 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 60) * 60 AS time,\n  CAST(resource_attributes['k8s.pod.name'] AS VARCHAR) AS metric,\n  AVG(value) AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.pod.memory.working_set'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${namespace:raw}' = 'All' OR CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) = '${namespace:raw}')\n  AND ('${node:raw}' = 'All' OR CAST(resource_attributes['k8s.node.name'] AS VARCHAR) = '${node:raw}')\n  AND ('${deployment:raw}' = 'All' OR CAST(resource_attributes['k8s.deployment.name'] AS VARCHAR) = '${deployment:raw}')\n  AND ('${pod:raw}' = 'All' OR CAST(resource_attributes['k8s.pod.name'] AS VARCHAR) = '${pod:raw}')\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 20) * 20 AS time,\n  CAST(resource_attributes['k8s.pod.name'] AS VARCHAR) AS metric,\n  AVG(value) AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.pod.memory.working_set'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${namespace:raw}' = 'All' OR CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) = '${namespace:raw}')\n  AND ('${node:raw}' = 'All' OR CAST(resource_attributes['k8s.node.name'] AS VARCHAR) = '${node:raw}')\n  AND ('${deployment:raw}' = 'All' OR CAST(resource_attributes['k8s.deployment.name'] AS VARCHAR) = '${deployment:raw}')\n  AND ('${pod:raw}' = 'All' OR CAST(resource_attributes['k8s.pod.name'] AS VARCHAR) = '${pod:raw}')\nGROUP BY 1, 2\nORDER BY 1",
           "refId": "A"
         }
       ],
       "title": "Pod Memory Usage (Working Set)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1.5,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "line+area" }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "transparent", "value": null },
+              { "color": "red", "value": 80 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "id": 30,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull"],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "mysql", "uid": "${datasource}" },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 20) * 20 AS time,\n  CAST(resource_attributes['k8s.pod.name'] AS VARCHAR) AS metric,\n  AVG(value) * 100 AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.pod.cpu_limit_utilization'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${namespace:raw}' = 'All' OR CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) = '${namespace:raw}')\n  AND ('${node:raw}' = 'All' OR CAST(resource_attributes['k8s.node.name'] AS VARCHAR) = '${node:raw}')\n  AND ('${deployment:raw}' = 'All' OR CAST(resource_attributes['k8s.deployment.name'] AS VARCHAR) = '${deployment:raw}')\n  AND ('${pod:raw}' = 'All' OR CAST(resource_attributes['k8s.pod.name'] AS VARCHAR) = '${pod:raw}')\nGROUP BY 1, 2\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Pod CPU Limit Utilization (%)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1.5,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "line+area" }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "transparent", "value": null },
+              { "color": "red", "value": 80 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "id": 31,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull"],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "mysql", "uid": "${datasource}" },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 20) * 20 AS time,\n  CAST(resource_attributes['k8s.pod.name'] AS VARCHAR) AS metric,\n  AVG(value) * 100 AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.pod.memory_limit_utilization'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${namespace:raw}' = 'All' OR CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) = '${namespace:raw}')\n  AND ('${node:raw}' = 'All' OR CAST(resource_attributes['k8s.node.name'] AS VARCHAR) = '${node:raw}')\n  AND ('${deployment:raw}' = 'All' OR CAST(resource_attributes['k8s.deployment.name'] AS VARCHAR) = '${deployment:raw}')\n  AND ('${pod:raw}' = 'All' OR CAST(resource_attributes['k8s.pod.name'] AS VARCHAR) = '${pod:raw}')\nGROUP BY 1, 2\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Pod Memory Limit Utilization (%)",
       "type": "timeseries"
     },
     {
@@ -306,7 +434,7 @@
           }
         ]
       },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 9 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 17 },
       "id": 4,
       "options": {
         "cellHeight": "sm",
@@ -334,7 +462,7 @@
     },
     {
       "collapsed": true,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
       "id": 10,
       "panels": [
         {
@@ -392,7 +520,7 @@
               "editorMode": "code",
               "format": "time_series",
               "rawQuery": true,
-              "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 60) * 60 AS time,\n  CAST(resource_attributes['k8s.node.name'] AS VARCHAR) AS metric,\n  AVG(value) * 1000 AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.node.cpu.usage'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${node:raw}' = 'All' OR CAST(resource_attributes['k8s.node.name'] AS VARCHAR) = '${node:raw}')\nGROUP BY 1, 2\nORDER BY 1",
+              "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 20) * 20 AS time,\n  CAST(resource_attributes['k8s.node.name'] AS VARCHAR) AS metric,\n  AVG(value) * 1000 AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.node.cpu.usage'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${node:raw}' = 'All' OR CAST(resource_attributes['k8s.node.name'] AS VARCHAR) = '${node:raw}')\nGROUP BY 1, 2\nORDER BY 1",
               "refId": "A"
             }
           ],
@@ -454,7 +582,7 @@
               "editorMode": "code",
               "format": "time_series",
               "rawQuery": true,
-              "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 60) * 60 AS time,\n  CAST(resource_attributes['k8s.node.name'] AS VARCHAR) AS metric,\n  AVG(value) AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.node.memory.working_set'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${node:raw}' = 'All' OR CAST(resource_attributes['k8s.node.name'] AS VARCHAR) = '${node:raw}')\nGROUP BY 1, 2\nORDER BY 1",
+              "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 20) * 20 AS time,\n  CAST(resource_attributes['k8s.node.name'] AS VARCHAR) AS metric,\n  AVG(value) AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.node.memory.working_set'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${node:raw}' = 'All' OR CAST(resource_attributes['k8s.node.name'] AS VARCHAR) = '${node:raw}')\nGROUP BY 1, 2\nORDER BY 1",
               "refId": "A"
             }
           ],
@@ -564,7 +692,7 @@
     },
     {
       "collapsed": true,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
       "id": 20,
       "panels": [
         {
@@ -622,7 +750,7 @@
               "editorMode": "code",
               "format": "time_series",
               "rawQuery": true,
-              "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 60) * 60 AS time,\n  CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) AS metric,\n  SUM(value) * 1000 AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.pod.cpu.usage'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${namespace:raw}' = 'All' OR CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) = '${namespace:raw}')\nGROUP BY 1, 2\nORDER BY 1",
+              "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 20) * 20 AS time,\n  CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) AS metric,\n  SUM(value) * 1000 AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.pod.cpu.usage'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${namespace:raw}' = 'All' OR CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) = '${namespace:raw}')\nGROUP BY 1, 2\nORDER BY 1",
               "refId": "A"
             }
           ],
@@ -684,7 +812,7 @@
               "editorMode": "code",
               "format": "time_series",
               "rawQuery": true,
-              "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 60) * 60 AS time,\n  CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) AS metric,\n  SUM(value) AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.pod.memory.working_set'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${namespace:raw}' = 'All' OR CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) = '${namespace:raw}')\nGROUP BY 1, 2\nORDER BY 1",
+              "rawSql": "SELECT FLOOR(UNIX_TIMESTAMP(timestamp) / 20) * 20 AS time,\n  CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) AS metric,\n  SUM(value) AS value\nFROM otel.otel_metrics_gauge\nWHERE metric_name = 'k8s.pod.memory.working_set'\n  AND timestamp >= FROM_UNIXTIME($__from/1000)\n  AND timestamp <= FROM_UNIXTIME($__to/1000)\n  AND ('${namespace:raw}' = 'All' OR CAST(resource_attributes['k8s.namespace.name'] AS VARCHAR) = '${namespace:raw}')\nGROUP BY 1, 2\nORDER BY 1",
               "refId": "A"
             }
           ],
@@ -793,7 +921,7 @@
       "type": "row"
     }
   ],
-  "refresh": "30s",
+  "refresh": "20s",
   "schemaVersion": 39,
   "tags": ["kubernetes", "otel", "doris", "kubelet"],
   "templating": {
