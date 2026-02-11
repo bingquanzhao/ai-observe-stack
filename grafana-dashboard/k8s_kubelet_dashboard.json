@@ -54,7 +54,7 @@
   "description": "Kubernetes monitoring dashboard powered by OpenTelemetry kubeletstats metrics stored in Apache Doris",
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 2,
+  "graphTooltip": 1,
   "id": null,
   "links": [],
   "panels": [
